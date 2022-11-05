@@ -1,4 +1,4 @@
-module github.com/google/docsy-example
+module sigs.k8s.io/cluster-api/docs/book
 
 go 1.12
 

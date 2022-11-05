@@ -1,0 +1,17 @@
+version: "3.3"
+
+services:
+
+  site:
+    image: docsy/docsy-example
+    build:
+       context: .
+    command: server 
+    ports:
+      - "1313:1313"
+    volumes:
+      # going up two folders because hugo looks for the git repository where the site is hosted
+      - ../../:/src
+
+    # sets working folder according to volume mount + the path to the site 
+    working_dir: /src/docs/book
