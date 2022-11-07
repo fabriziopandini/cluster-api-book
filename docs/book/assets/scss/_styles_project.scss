@@ -1,0 +1,53 @@
+// --------------------------------------------------
+// custom navbar with larger logo and without title
+// --------------------------------------------------
+.td-navbar {
+
+  .navbar-brand {
+    .navbar-logo {
+      svg {
+        // makes the logo to stand out from the navbar
+        position: absolute;
+        top: 0;
+        // sets the logo size
+        padding: 10px;
+        height: 150px;
+
+        @include media-breakpoint-down(md) {
+          // scale down the logo on medium devides
+          padding: 6px;
+          height: 100px;
+        }
+        @include media-breakpoint-down(sm) { 
+          // scale down the logo smaller devides and moves it back into the navbar-brand
+          position: relative;
+          height: 100px;
+        }
+      }
+    }
+
+    .navbar-brand__name {
+      // hides the site title
+      display: none;
+    }
+  }
+}
+
+.td-sidebar {
+
+  .td-sidebar__inner {
+    // moves down the sidebar content to accomodate logo size
+    padding-top: 80px;
+
+    @include media-breakpoint-down(md) {
+      // moves down the sidebar content to accomodate logo size on medium devices
+      padding-top: 30px;
+    }
+  }
+}
+
+.td-page-meta--view { display: none !important; }
+.td-page-meta--edit { display: none !important; }
+.td-page-meta--child { display: none !important; }
+.td-page-meta--issue { display: none !important; }
+.td-page-meta--project-issue { display: none !important; }
