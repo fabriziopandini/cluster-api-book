@@ -5,7 +5,7 @@ description: |
   Documentation about support for running multiple-instances of the same provider.
 ---
 
-Up until v1alpha3, the need of supporting [multiple credentials](../../../reference/glossary.md#multi-tenancy) was addressed by running multiple
+Up until v1alpha3, the need of supporting [multiple credentials]({{< ref "/docs/user/reference/glossary.md#multi-tenancy" >}}) was addressed by running multiple
 instances of the same provider, each one with its own set of credentials while watching different namespaces.
 
 However, running multiple instances of the same provider proved to be complicated for several reasons:

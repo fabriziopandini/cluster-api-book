@@ -28,7 +28,7 @@ Optionally, the provider repository can include the following files:
 The `clusterctl` command ships with a pre-defined list of provider repositories that allows a simpler "out-of-the-box" user experience.
 As a provider implementer, if you are interested in being added to this list, please create an issue to the [Cluster API repository](https://sigs.k8s.io/cluster-api).
 
-As a user, it is possible to customize the list of pre-defined providers for `clusterctl` by changing the [clusterctl configuration](configuration.md).
+As a user, it is possible to customize the list of pre-defined providers for `clusterctl` by changing the [clusterctl configuration]({{< ref "/docs/user/reference/clusterctl-configuration.md" >}}).
 
 {{< /alert >}}
 
@@ -81,7 +81,7 @@ for the core provider:
         - metadata.yaml
   ```
 
-- Use the following [`clusterctl` configuration](configuration.md):
+- Use the following [`clusterctl` configuration]({{< ref "/docs/user/reference/clusterctl-configuration.md" >}}):
 
   ```yaml
   providers:
@@ -183,7 +183,7 @@ While defining the Deployment Spec, the container that executes the controller/r
 
 For controllers only, the manager MUST support a `--namespace` flag for specifying the namespace where the controller
 will look for objects to reconcile; however, clusterctl will always install providers watching for all namespaces
-(`--namespace=""`); for more details see [support for multiple instances](../developer/architecture/controllers/support-multiple-instances.md)
+(`--namespace=""`); for more details see [support for multiple instances]({{< ref "multiple-instances.md" >}})
 for more context.
 
 While defining Pods for Deployments, canonical names should be used for images.

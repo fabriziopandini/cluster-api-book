@@ -71,11 +71,11 @@ documentation](https://docs.tilt.dev/api.html#api.default_registry) for more det
 **provider_repos** (Array[]String, default=[]): A list of paths to all the providers you want to use. Each provider must have a
 `tilt-provider.yaml` or `tilt-provider.json` file describing how to build the provider.
 
-**enable_providers** (Array[]String, default=['docker']): A list of the providers to enable. See [available providers](#available-providers)
+**enable_providers** (Array[]String, default=['docker']): A list of the providers to enable. See [available providers]({{< ref "#available-providers" >}})
 for more details.
 
 **template_dirs** (Map{String: Array[]String}, default={"docker": [
-"./test/infrastructure/docker/templates"]}): A map of providers to directories containing cluster templates. An example of the field is given below. See [Deploying a workload cluster](#deploying-a-workload-cluster) for how this is used.
+"./test/infrastructure/docker/templates"]}): A map of providers to directories containing cluster templates. An example of the field is given below. See [Deploying a workload cluster]({{< ref "#deploying-a-workload-cluster" >}}) for how this is used.
 
 ```yaml
 template_dirs:
@@ -91,7 +91,7 @@ template_dirs:
 ```
 
 **kustomize_substitutions** (Map{String: String}, default={}): An optional map of substitutions for `${}`-style placeholders in the
-provider's yaml. These substitutions are also used when deploying cluster templates. See [Deploying a workload cluster](#deploying-a-workload-cluster).
+provider's yaml. These substitutions are also used when deploying cluster templates. See [Deploying a workload cluster]({{< ref "#deploying-a-workload-cluster" >}}).
 
 **Note**: When running E2E tests locally using an existing cluster managed by Tilt, the following substitutions are required for successful tests:
 ```yaml
@@ -102,6 +102,8 @@ kustomize_substitutions:
   EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
   EXP_RUNTIME_SDK: "true"
 ```
+
+Additional substituitions can be done for providers:
 
 {{< tabs tabTotal="4" >}}
 {{< tab tabName="AWS" >}}
@@ -293,7 +295,7 @@ These can be customized for your specific needs.
 ### Deploying a workload cluster
 
 After your kind management cluster is up and running with Tilt, you can deploy a workload clusters in the Tilt web UI based off of YAML templates from the directories specified in
-the `template_dirs` field from the [tilt-settings.yaml](#tilt-settings-fields) file (default `./test/infrastructure/docker/templates`).
+the `template_dirs` field from the [tilt-settings.yaml]({{< ref "#tilt-settings-fields" >}}) file (default `./test/infrastructure/docker/templates`).
 
 Templates should be named according to clusterctl conventions:
 
@@ -334,8 +336,8 @@ operations; this is because tilt doesn't initialize providers on the management 
 some of the clusterctl commands like clusterctl config won't work.
 
 This limitation is an acceptable trade-off while executing fast dev-test iterations on controllers logic. If instead
-you are interested in testing clusterctl workflows, you should refer to the
-[clusterctl developer instructions](../clusterctl/developers.md).
+you are interested in testing clusterctl workflows, you should refer to 
+[testing clusterctl with a local repository]({{< ref "../test/clusterctl.md" >}}).
 
 ## Available providers
 
@@ -452,4 +454,3 @@ syntax highlighting and auto-formatting. To enable it for Tiltfile a file associ
   "Tiltfile": "starlark",
 },
 ```
-

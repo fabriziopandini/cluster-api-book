@@ -13,7 +13,7 @@ allowing integration bugs to slip through.
 
 In Cluster API most of the unit tests are developed using [go test], [gomega] and the [fakeclient]; however using
 [fakeclient] is not suitable for all the use cases due to some limitations in how it is implemented. In some cases
-contributors will be required to use [envtest]. See the [quick reference](#quick-reference) below for more details.
+contributors will be required to use [envtest]. See the [quick reference]({{< ref "#quick-reference" >}}) below for more details.
 
 ### Mocking external APIs
 In some cases when writing tests it is required to mock external API, e.g. etcd client API.
@@ -44,9 +44,9 @@ In Cluster API, integration tests are based on [envtest] and one or more control
 the test cluster.
 
 With this approach it is possible to interact with Cluster API almost like in a real environment, by creating/updating
-Kubernetes objects and waiting for the controllers to take action. See the [quick reference](#quick-reference) below for more details.
+Kubernetes objects and waiting for the controllers to take action. See the [quick reference]({{< ref "#quick-reference" >}}) below for more details.
 
-Also in case of integration tests, considerations about [mocking external APIs](#mocking-external-apis) and usage of [generic providers](#generic-providers) apply. 
+Also in case of integration tests, considerations about [mocking external APIs]({{< ref "#mocking-external-apis" >}}) and usage of [generic providers]({{< ref "#generic-providers" >}}) apply. 
 
 ## Fuzzing tests
 
@@ -57,7 +57,7 @@ Two different types of fuzzing are currently being used on the Cluster API repos
 ### Fuzz testing for API conversion
 
 Cluster API uses Kubernetes' conversion-gen to automate the generation of functions to convert our API objects between versions. These conversion functions are tested using the [FuzzTestFunc util in our conversion utils package](https://github.com/kubernetes-sigs/cluster-api/blob/1ec0cd6174f1b860dc466db587241ea7edea0b9f/util/conversion/conversion.go#L194).
-For more information about these conversions see the API conversion code walkthrough in our [video walkthrough series](./guide.md#videos-explaining-capi-architecture-and-code-walkthroughs).
+For more information about these conversions see the API conversion code walkthrough in our [video walkthrough series]({{< ref "../video-and-talks.md#videos-explaining-capi-architecture-and-code-walkthroughs" >}}).
 
 ### OSS-Fuzz continuous fuzzing
 
@@ -117,7 +117,7 @@ The following guidelines should be followed when developing E2E tests:
 - Use the [Cluster API test framework].
 - Define test spec reflecting real user workflow, e.g. [Cluster API quick start].
 - Unless you are testing provider specific features, ensure your test can run with
-  different infrastructure providers (see [Writing Portable Tests](./e2e.md#writing-portable-e2e-tests)).
+  different infrastructure providers (see [Writing Portable Tests]({{< ref "./e2e-tests.md#writing-portable-e2e-tests" >}})).
 
 See [e2e development] for more information on developing e2e tests for CAPI and external providers.
 
@@ -210,13 +210,13 @@ Execute the run configuration with `Debug`.
 {{< alert >}}
 
 The e2e tests create a new management cluster with kind on each run. To avoid this and speed up the test execution the tests can 
-also be run against a management cluster created by [tilt](./tilt.md):
+also be run against a management cluster created by [tilt]({{< ref "../dev/tilt.md" >}}):
 ```bash
 make tilt-up 
 ```
 Now you can start the e2e test via IDE as described above but with the additional `-e2e.use-existing-cluster=true` flag.
 
-**Note**: This can also be used to debug controllers during e2e tests as described in [Developing Cluster API with Tilt](./tilt.md#wiring-up-debuggers).
+**Note**: This can also be used to debug controllers during e2e tests as described in [Developing Cluster API with Tilt]({{< ref "../dev/tilt.md#wiring-up-debuggers" >}}).
 
 The e2e tests also create a local clusterctl repository. After it has been created on a first test execution this step can also be 
 skipped by setting `-e2e.cluster-config=<ARTIFACTS>/repository/clusterctl-config.yaml`. This also works with a clusterctl repository created 
@@ -270,7 +270,7 @@ Furthermore, it's possible to overwrite all env variables specified in `variable
 Logs of e2e tests can be analyzed with our development environment by pushing logs to Loki and then
 analyzing them via Grafana.
 
-1. Start the development environment as described in [Developing Cluster API with Tilt](./tilt.md).
+1. Start the development environment as described in [Developing Cluster API with Tilt]({{< ref "../dev/tilt.md" >}}).
     * Make sure to deploy Loki and Grafana via `deploy_observability`.
     * If you only want to see imported logs, don't deploy promtail (via `deploy_observability`).
     * If you want to drop all logs from Loki, just delete the Loki Pod in the `observability` namespace.
@@ -513,9 +513,9 @@ In Cluster API all the test MUST use [Gomega] assertions.
 
 In Cluster API Unit and integration test MUST use [go test].
 
-[Cluster API quick start]: ../user/quick-start.md
+[Cluster API quick start]: /try/_index.md
 [Cluster API test framework]: https://pkg.go.dev/sigs.k8s.io/cluster-api/test/framework?tab=doc
-[e2e development]: ./e2e.md
+[e2e development]: e2e-tests.md
 [Ginkgo]: http://onsi.github.io/ginkgo/
 [Gomega]: http://onsi.github.io/gomega/
 [go test]: https://golang.org/pkg/testing/
@@ -523,4 +523,3 @@ In Cluster API Unit and integration test MUST use [go test].
 [envtest]: https://github.com/kubernetes-sigs/controller-runtime/tree/master/pkg/envtest
 [fakeclient]: https://github.com/kubernetes-sigs/controller-runtime/tree/master/pkg/client/fake
 [test/helpers]: https://github.com/kubernetes-sigs/cluster-api/tree/main/test/helpers
-

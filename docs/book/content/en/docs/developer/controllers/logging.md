@@ -27,16 +27,16 @@ as well as tools and libraries for logging.
 
 The foundational items of Cluster API logging are:
 
-- Support for structured logging in all the Cluster API controllers (see [log format](#log-format)).
-- Using contextual logging (see [contextual logging](#contextual-logging)).
+- Support for structured logging in all the Cluster API controllers (see [log format]({{< ref "#log-format" >}})).
+- Using contextual logging (see [contextual logging]({{< ref "#contextual-logging" >}})).
 - Adding a minimal set of key/value pairs in the logger at the beginning of each reconcile loop, so all the subsequent
-  log entries will inherit them (see [key value pairs](#keyvalue-pairs)).
+  log entries will inherit them (see [key value pairs]({{< ref "#keyvalue-pairs" >}})).
 
 Starting from the above foundations, then the long tail of small improvements will consist of following activities: 
  
-- Improve consistency of additional key/value pairs added by single log entries (see [key value pairs](#keyvalue-pairs)).
-- Improve log messages (see [log messages](#log-messages)).
-- Improve consistency of log levels (see [log levels](#log-levels)).
+- Improve consistency of additional key/value pairs added by single log entries (see [key value pairs]({{< ref "#keyvalue-pairs" >}})).
+- Improve log messages (see [log messages]({{< ref "#log-messages" >}})).
+- Improve consistency of log levels (see [log levels]({{< ref "#log-levels" >}})).
 
 ## Log Format
 
@@ -105,7 +105,7 @@ key value pairs (in order of importance):
 - Period at the end of a message MUST be omitted.
 - Always prefer logging before the action, so in case of errors there will be an immediate, visual correlation between
   the action log and the corresponding error log; While logging before the action, log verbs should use the -ing form.
-- Ideally log messages should surface a different level of detail according to the target log level (see [log levels](#log-levels)
+- Ideally log messages should surface a different level of detail according to the target log level (see [log levels]({{< ref "#log-levels" >}})
   for more details).
 
 ## Log Levels
@@ -219,5 +219,3 @@ we encourage providers to adopt and contribute to the guidelines defined in this
 
 It is also worth noting that the foundational elements of the approach described in this document are easy to achieve
 by leveraging default Kubernetes tooling for logging.
-
-

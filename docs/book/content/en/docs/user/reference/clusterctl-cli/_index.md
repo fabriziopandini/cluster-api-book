@@ -20,10 +20,10 @@ While using providers hosted on GitHub, clusterctl is calling GitHub API which a
 To avoid rate limiting for the public repos set the `GITHUB_TOKEN` environment variable. To generate a token [follow this](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) documentation. The token only needs `repo` scope for clusterctl.
 
 ## Installing clusterctl
-Instructions are available in the [Quick Start](../user/quick-start.md#install-clusterctl).
+Instructions are available in the [Quick Start]({{< ref "/try/_index.md" >}}).
 
 <!-- links -->
-[management cluster]: ../reference/glossary.md#management-cluster
-[provider components]: ../reference/glossary.md#provider-components
+[management cluster]: ../glossary.md#management-cluster
+[provider components]: ../glossary.md#provider-components
 
 ## Available commands

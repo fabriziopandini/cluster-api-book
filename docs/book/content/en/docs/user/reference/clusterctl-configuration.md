@@ -14,7 +14,7 @@ It can be used to:
 
 ## Provider repositories
 
-The `clusterctl` CLI is designed to work with providers implementing the [clusterctl Provider Contract](provider-contract.md).
+The `clusterctl` CLI is designed to work with providers implementing the [clusterctl Provider Contract]({{< ref "/docs/provider/contract/clusterctl.md" >}}).
 
 Each provider is expected to define a provider repository, a well-known place where release assets are published.
 
@@ -44,7 +44,7 @@ providers:
     type: "BootstrapProvider"
 ```
 
-See [provider contract](provider-contract.md) for instructions about how to set up a provider repository.
+See [provider contract]({{< ref "/docs/provider/contract/clusterctl.md" >}}) for instructions about how to set up a provider repository.
 
 ## Variables
 
@@ -102,7 +102,7 @@ Please note that the configuration above will be considered also when doing `clu
 
 ## Avoiding GitHub rate limiting
 
-Follow [this](./overview.md#avoiding-github-rate-limiting)
+Follow [this]({{< ref "clusterctl-cli/_index.md#avoiding-github-rate-limiting" >}})
 
 ## Overrides Layer
 
@@ -142,7 +142,7 @@ For example,
 ```
 
 For developers who want to generate the overrides layer, see
-[Build artifacts locally](developers.md#build-artifacts-locally).
+[Build artifacts locally]({{< ref "/docs/developer/test/clusterctl.md#build-artifacts-locally" >}}).
 
 Once these overrides are specified, `clusterctl` will use them instead of
 getting the values from the default or specified providers.
@@ -192,7 +192,7 @@ Image override is an advanced feature and wrong configuration can easily lead to
 It's strongly recommended to test configurations on dev/test environments before using this functionality in production.
 
 This feature must always be used in conjunction with
-[version tag](commands/init.md#provider-version) when executing clusterctl commands.
+[version tag]({{< ref "clusterctl-cli/init.md#provider-version" >}}) when executing clusterctl commands.
 
 {{< /alert >}}
 
