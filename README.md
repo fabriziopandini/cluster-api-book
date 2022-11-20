@@ -2,7 +2,7 @@
 
 In this project, I'm playing around [Hugo][] and [Docsy][] for usage on Cluster API book.
 
-Preview visible on [Netlify][] at [](https://cluster-api-book-test.netlify.app/)
+Preview visible on [Netlify][] at [https://cluster-api-book-test.netlify.app/](https://cluster-api-book-test.netlify.app/)
 
 [Docsy]: https://github.com/google/docsy
 [Hugo]: https://gohugo.io/
@@ -162,5 +162,3 @@ There is still a long way to do...
 - [ ] complete work on "home", "about" and "community"
   - [ ] think to key messages in home (multi cloud, like Kubernetes, manage etc, might be an example)
   - [ ] ensure "about" and "community" can have look and feel like home page at top and content below
-
-
