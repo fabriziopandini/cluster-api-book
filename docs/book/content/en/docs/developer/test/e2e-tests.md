@@ -13,7 +13,7 @@ The following guidelines should be followed when developing E2E tests:
 - Use the [Cluster API test framework].
 - Define test spec reflecting real user workflow, e.g. [Cluster API quick start].
 - Unless you are testing provider specific features, ensure your test can run with
-  different infrastructure providers (see [Writing Portable Tests]({{< ref "#writing-portable-e2e-tests" >}})).
+  different infrastructure providers (see [Writing Portable Tests](#writing-portable-e2e-tests)).
 
 The [Cluster API test framework] provides you a set of helper methods for getting your test in place
 quickly. The [test E2E package] provides examples of how this can be achieved and reusable
@@ -32,7 +32,7 @@ Each E2E test requires a set of artifacts to be available:
 
 The Cluster API test framework provides support for building and retrieving the manifest
 files for Cluster API core components and for the Cluster API infrastructure provider
-(see [Setup]({{< ref "#setup" >}})).
+(see [Setup](#setup)).
 
 For the remaining tasks you can find examples of
 how this can be implemented e.g. in [CAPA E2E tests] and [CAPG E2E tests].
@@ -113,7 +113,7 @@ There are two possible approaches for creating objects in the management cluster
 
 The first approach leverages the [controller-runtime Client] and gives you full control, but it comes with
 some drawbacks as well, because this method does not directly reflect real user workflows, and most importantly,
-the resulting tests are not as reusable with other infrastructure providers. (See [writing portable tests]({{< ref "#writing-portable-e2e-tests" >}})).
+the resulting tests are not as reusable with other infrastructure providers. (See [writing portable tests](#writing-portable-e2e-tests)).
 
 We recommend using the [ClusterTemplate method] and the [Apply method] for creating objects in the cluster.
 This methods mimics the recommended user workflows, and it is based on `cluster-templates.yaml` files that can be
@@ -146,7 +146,7 @@ defined in the [Cluster API test framework] to check if the operation completed 
 
 ### Naming the test spec
 
-You can categorize the test with a custom label that can be used to filter a category of E2E tests to be run. Currently, the cluster-api codebase has [these labels]({{< ref "./testing.md#running-specific-tests" >}}) which are used to run a focused subset of tests.
+You can categorize the test with a custom label that can be used to filter a category of E2E tests to be run. Currently, the cluster-api codebase has [these labels](./testing#running-specific-tests) which are used to run a focused subset of tests.
 
 ## Tear down
 

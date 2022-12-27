@@ -1,8 +1,11 @@
 ---
-title: "Controllers"
+title: "Controllers Overview"
 weight: 30
 description: |
-  Documentation about controllers in the Cluster API project.
+  Overview about how controllers in the Cluster API project works.
+migration: |
+  TODO
+aliases:
+- /developer/architecture/controllers
+- /developer/architecture/controllers.html
 ---
-
-

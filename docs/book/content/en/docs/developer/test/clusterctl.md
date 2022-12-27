@@ -49,7 +49,7 @@ make docker-build REGISTRY=gcr.io/k8s-staging-cluster-api PULL_POLICY=IfNotPrese
 ### Create a clusterctl-settings.json file
 
 Next, create a `clusterctl-settings.json` file and place it in your local copy
-of Cluster API. This file will be used by [create-local-repository.py]({{< ref "#create-the-local-repository" >}}). Here is an example:
+of Cluster API. This file will be used by [create-local-repository.py](#create-the-local-repository). Here is an example:
 
 ```yaml
 {
@@ -59,7 +59,7 @@ of Cluster API. This file will be used by [create-local-repository.py]({{< ref "
 ```
 
 **providers** (Array[]String, default=[]): A list of the providers to enable.
-See [available providers]({{< ref "../dev/tilt.md#available-providers" >}}) for more details.
+See [available providers](../dev/tilt#available-providers) for more details.
 
 **provider_repos** (Array[]String, default=[]): A list of paths to all the providers you want to use. Each provider must have
 a `clusterctl-settings.json` file describing how to build the provider assets.

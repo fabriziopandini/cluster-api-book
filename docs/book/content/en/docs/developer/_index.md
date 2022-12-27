@@ -1,5 +1,5 @@
 ---
-title: "Developers Guide"
+title: "Cluster API Developers Guide"
 linkTitle: "Developers Guide"
 weight: 30
 description: |

@@ -21,11 +21,12 @@ package main
 
 import (
 	"fmt"
-	. "github.com/onsi/gomega"
 	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
+
+	. "github.com/onsi/gomega"
 )
 
 func Test_newPage(t *testing.T) {
@@ -92,6 +93,7 @@ func Test_addUrl(t *testing.T) {
 			url:  "$$$%%%???",
 			wantUrl: link{
 				rawLink:    "$$$%%%???",
+				lineNumber: 1,
 				fatalError: "error parsing url: parse \"$$$%%%???\": invalid URL escape \"%%%\"",
 			},
 		},
@@ -100,8 +102,9 @@ func Test_addUrl(t *testing.T) {
 			path: "/root/test.md",
 			url:  "https://www.google.com",
 			wantUrl: link{
-				rawLink: "https://www.google.com",
-				URL:     mustParseUrl("https://www.google.com"),
+				rawLink:    "https://www.google.com",
+				lineNumber: 1,
+				URL:        mustParseUrl("https://www.google.com"),
 			},
 		},
 		{
@@ -110,6 +113,7 @@ func Test_addUrl(t *testing.T) {
 			url:  "another-page.md",
 			wantUrl: link{
 				rawLink:    "another-page.md",
+				lineNumber: 1,
 				fatalError: "scheme is required on links outside the hugo website",
 			},
 		},
@@ -121,7 +125,28 @@ func Test_addUrl(t *testing.T) {
 			url:  "$$$%%%???",
 			wantUrl: link{
 				rawLink:    "$$$%%%???",
+				lineNumber: 1,
 				fatalError: "error parsing url: parse \"$$$%%%???\": invalid URL escape \"%%%\"",
+			},
+		},
+		{
+			name: "url with ref/reflink",
+			path: "/root/hugo/content/en/test.md",
+			url:  "{{< ref \"something\" >}}",
+			wantUrl: link{
+				rawLink:    "{{< ref \"something\" >}}",
+				lineNumber: 1,
+				fatalError: "ref/refLink shortcodes must not be used, use \"something\" instead",
+			},
+		},
+		{
+			name: "url with _index.md",
+			path: "/root/hugo/content/en/test.md",
+			url:  "something/_index.md",
+			wantUrl: link{
+				rawLink:    "something/_index.md",
+				lineNumber: 1,
+				fatalError: "links must not end with _index.md, use \"something/\" instead",
 			},
 		},
 		{
@@ -129,125 +154,59 @@ func Test_addUrl(t *testing.T) {
 			path: "/root/hugo/content/en/test.md",
 			url:  "https://www.google.com",
 			wantUrl: link{
-				rawLink: "https://www.google.com",
-				URL:     mustParseUrl("https://www.google.com"),
+				rawLink:    "https://www.google.com",
+				lineNumber: 1,
+				URL:        mustParseUrl("https://www.google.com"),
 			},
 		},
 		{
 			name: "relative path url",
 			path: "/root/hugo/content/en/folder/test.md",
-			url:  "another-page.md",
+			url:  "another-page",
 			wantUrl: link{
-				rawLink: "another-page.md",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/another-page.md"),
+				rawLink:    "another-page",
+				lineNumber: 1,
+				URL:        mustParseUrl("/root/hugo/content/en/folder/another-page.md"),
 			},
 		},
 		{
-			name: "relative path url with anchor on the current page",
+			name: "relative path url with anchor on the current page (with path)",
 			path: "/root/hugo/content/en/folder/test.md",
-			url:  "test.md#anchor",
+			url:  "test#anchor",
 			wantUrl: link{
-				rawLink: "test.md#anchor",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/test.md#anchor"),
+				rawLink:    "test#anchor",
+				lineNumber: 1,
+				URL:        mustParseUrl("/root/hugo/content/en/folder/test.md#anchor"),
 			},
 		},
 		{
-			name: "url with anchor on the current page (without path)",
+			name: "relative path url with anchor on the current page (without path)",
 			path: "/root/hugo/content/en/folder/test.md",
 			url:  "#anchor",
 			wantUrl: link{
-				rawLink: "#anchor",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/test.md#anchor"),
+				rawLink:    "#anchor",
+				lineNumber: 1,
+				URL:        mustParseUrl("/root/hugo/content/en/folder/test.md#anchor"),
 			},
 		},
 		{
-			name: "relative path url with anchor to another page",
+			name: "relative path url with anchor on another page",
 			path: "/root/hugo/content/en/folder/test.md",
-			url:  "another.md#anchor",
+			url:  "another#anchor",
 			wantUrl: link{
-				rawLink: "another.md#anchor",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/another.md#anchor"),
+				rawLink:    "another#anchor",
+				lineNumber: 1,
+				URL:        mustParseUrl("/root/hugo/content/en/folder/another.md#anchor"),
 			},
 		},
 		{
-			name: "absolute path url linking a file in content/language root",
+			name: "absolute path url linking a file in content/en",
 			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"/another-page.md\" >}}",
+			url:  "/another-page",
 			wantUrl: link{
-				rawLink: "{{< ref \"/another-page.md\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/another-page.md"),
-			},
-		},
-		{
-			name: "absolute path url linking a file in a folder nested into content/language root",
-			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"/folder/another-page.md\" >}}",
-			wantUrl: link{
-				rawLink: "{{< ref \"/folder/another-page.md\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/another-page.md"),
-			},
-		},
-		{
-			name: "ref with relative url linking a file in content/language root",
-			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"../another-page.md\" >}}",
-			wantUrl: link{
-				rawLink: "{{< ref \"another-page.md\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/another-page.md"),
-			},
-		},
-		{
-			name: "ref with relative path linking a file in a folder nested into content/language root",
-			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"another-page.md\" >}}",
-			wantUrl: link{
-				rawLink: "{{< ref \"another-page.md\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/another-page.md"),
-			},
-		},
-		{
-			name: "ref with absolute path linking a file in content/language root",
-			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"/folder/another-page.md\" >}}",
-			wantUrl: link{
-				rawLink: "{{< ref \"/folder/another-page.md\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/another-page.md"),
-			},
-		},
-		{
-			name: "ref with absolute path linking a file in a folder nested into content/language root",
-			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"/folder/another-page.md\" >}}",
-			wantUrl: link{
-				rawLink: "{{< ref \"/folder/another-page.md\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/another-page.md"),
-			},
-		},
-		{
-			name: "ref linking to an anchor on the current page (with path)",
-			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"test.md#anchor\" >}}",
-			wantUrl: link{
-				rawLink: "{{< ref \"test.md#anchor\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/test.md#anchor"),
-			},
-		},
-		{
-			name: "ref linking to an anchor on the current page (without path)",
-			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"#anchor\" >}}",
-			wantUrl: link{
-				rawLink: "{{< ref \"#anchor\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/test.md#anchor"),
-			},
-		},
-		{
-			name: "ref linking to an anchor on another page",
-			path: "/root/hugo/content/en/folder/test.md",
-			url:  "{{< ref \"another.md#anchor\" >}}",
-			wantUrl: link{
-				rawLink: "{{< ref \"another.md#anchor\" >}}",
-				URL:     mustParseUrl("/root/hugo/content/en/folder/another.md#anchor"),
+				rawLink:    "/another-page",
+				lineNumber: 1,
+				URL:        mustParseUrl("/root/hugo/content/en/another-page.md"),
 			},
 		},
 	}
@@ -256,7 +215,7 @@ func Test_addUrl(t *testing.T) {
 			g := NewWithT(t)
 
 			page := newPage(tt.path)
-			page.addLink(tt.url)
+			page.addLink(tt.url, 1)
 			g.Expect(page.links[0]).To(Equal(tt.wantUrl))
 		})
 	}
@@ -279,27 +238,34 @@ func Test_linkcheckPage(t *testing.T) {
 
 	touch(g, filepath.Join(contentDir, "en/test.md"))
 	touch(g, filepath.Join(contentDir, "en/another.md"))
+	touch(g, filepath.Join(contentDir, "en/folder/_index.md"))
 
 	anotherp := newPage(filepath.Join(contentDir, "en/another.md"))
 	anotherp.anchors = []string{"anchor"}
+
+	indexp := newPage(filepath.Join(contentDir, "en/folder/_index.md"))
+	indexp.anchors = []string{"anchor"}
 
 	tests := []struct {
 		name      string
 		page      func() page
 		wantLinks []link
 	}{
+		// TODO: pages outside the hugo website
+
 		// pages inside the hugo website
 		{
 			name: "page with a valid ref linking to the current page",
 			page: func() page {
 				p := newPage(filepath.Join(contentDir, "en/test.md"))
-				p.addLink("{{< ref \"test.md\" >}}")
+				p.addLink("test", 1)
 				return p
 			},
 			wantLinks: []link{
 				{
-					rawLink: "{{< ref \"test.md\" >}}",
-					URL:     mustParseUrl(filepath.Join(contentDir, "en/test.md")),
+					rawLink:    "test",
+					lineNumber: 1,
+					URL:        mustParseUrl(filepath.Join(contentDir, "en/test.md")),
 				},
 			},
 		},
@@ -307,13 +273,30 @@ func Test_linkcheckPage(t *testing.T) {
 			name: "page with a valid ref linking to the another page",
 			page: func() page {
 				p := newPage(filepath.Join(contentDir, "en/test.md"))
-				p.addLink("{{< ref \"another.md\" >}}")
+				p.addLink("another", 1)
 				return p
 			},
 			wantLinks: []link{
 				{
-					rawLink: "{{< ref \"another.md\" >}}",
-					URL:     mustParseUrl(filepath.Join(contentDir, "en/another.md")),
+					rawLink:    "another",
+					lineNumber: 1,
+					URL:        mustParseUrl(filepath.Join(contentDir, "en/another.md")),
+				},
+			},
+		},
+		{
+			name: "page with a valid ref linking to an anchor on the current page (with path)",
+			page: func() page {
+				p := newPage(filepath.Join(contentDir, "en/test.md"))
+				p.addLink("test#anchor", 1)
+				p.anchors = []string{"anchor"}
+				return p
+			},
+			wantLinks: []link{
+				{
+					rawLink:    "test#anchor",
+					lineNumber: 1,
+					URL:        mustParseUrl(filepath.Join(contentDir, "en/test.md#anchor")),
 				},
 			},
 		},
@@ -321,29 +304,15 @@ func Test_linkcheckPage(t *testing.T) {
 			name: "page with a valid ref linking to an anchor on the current page (without path)",
 			page: func() page {
 				p := newPage(filepath.Join(contentDir, "en/test.md"))
-				p.addLink("{{< ref \"#anchor\" >}}")
+				p.addLink("#anchor", 1)
 				p.anchors = []string{"anchor"}
 				return p
 			},
 			wantLinks: []link{
 				{
-					rawLink: "{{< ref \"#anchor\" >}}",
-					URL:     mustParseUrl(filepath.Join(contentDir, "en/test.md#anchor")),
-				},
-			},
-		},
-		{
-			name: "page with a valid ref linking to an anchor on the current page (without path)",
-			page: func() page {
-				p := newPage(filepath.Join(contentDir, "en/test.md"))
-				p.addLink("{{< ref \"#anchor\" >}}")
-				p.anchors = []string{"anchor"}
-				return p
-			},
-			wantLinks: []link{
-				{
-					rawLink: "{{< ref \"#anchor\" >}}",
-					URL:     mustParseUrl(filepath.Join(contentDir, "en/test.md#anchor")),
+					rawLink:    "#anchor",
+					lineNumber: 1,
+					URL:        mustParseUrl(filepath.Join(contentDir, "en/test.md#anchor")),
 				},
 			},
 		},
@@ -351,13 +320,59 @@ func Test_linkcheckPage(t *testing.T) {
 			name: "page with a valid ref linking to an anchor on the another page",
 			page: func() page {
 				p := newPage(filepath.Join(contentDir, "en/test.md"))
-				p.addLink("{{< ref \"another.md#anchor\" >}}")
+				p.addLink("another#anchor", 1)
 				return p
 			},
 			wantLinks: []link{
 				{
-					rawLink: "{{< ref \"another.md#anchor\" >}}",
-					URL:     mustParseUrl(filepath.Join(contentDir, "en/another.md#anchor")),
+					rawLink:    "another#anchor",
+					lineNumber: 1,
+					URL:        mustParseUrl(filepath.Join(contentDir, "en/another.md#anchor")),
+				},
+			},
+		},
+		{
+			name: "page with an link to _index.md",
+			page: func() page {
+				p := newPage(filepath.Join(contentDir, "en/test.md"))
+				p.addLink("/folder", 1)
+				return p
+			},
+			wantLinks: []link{
+				{
+					rawLink:    "/folder",
+					lineNumber: 1,
+					URL:        mustParseUrl(filepath.Join(contentDir, "en/folder/_index.md")),
+				},
+			},
+		},
+		{
+			name: "page with an link to an anchor in _index.md",
+			page: func() page {
+				p := newPage(filepath.Join(contentDir, "en/test.md"))
+				p.addLink("/folder#anchor", 1)
+				return p
+			},
+			wantLinks: []link{
+				{
+					rawLink:    "/folder#anchor",
+					lineNumber: 1,
+					URL:        mustParseUrl(filepath.Join(contentDir, "en/folder/_index.md#anchor")),
+				},
+			},
+		},
+		{
+			name: "page with an link to an anchor in _index.md",
+			page: func() page {
+				p := newPage(filepath.Join(contentDir, "en/folder/test.md"))
+				p.addLink("../folder#anchor", 1)
+				return p
+			},
+			wantLinks: []link{
+				{
+					rawLink:    "../folder#anchor",
+					lineNumber: 1,
+					URL:        mustParseUrl(filepath.Join(contentDir, "en/folder/_index.md#anchor")),
 				},
 			},
 		},
@@ -365,14 +380,15 @@ func Test_linkcheckPage(t *testing.T) {
 			name: "page with an invalid ref",
 			page: func() page {
 				p := newPage(filepath.Join(contentDir, "en/test.md"))
-				p.addLink("{{< ref \"invalid.md\" >}}")
+				p.addLink("invalid", 1)
 				return p
 			},
 			wantLinks: []link{
 				{
-					rawLink:    "{{< ref \"invalid.md\" >}}",
+					rawLink:    "invalid",
+					lineNumber: 1,
 					URL:        mustParseUrl(filepath.Join(contentDir, "en/invalid.md")),
-					fatalError: fmt.Sprintf("%s does not exist", filepath.Join(contentDir, "en/invalid.md")),
+					fatalError: fmt.Sprintf("the link resolves to %s which does not exist", "/hugo/content/en/invalid.md"),
 				},
 			},
 		},
@@ -380,14 +396,15 @@ func Test_linkcheckPage(t *testing.T) {
 			name: "page with a valid ref linking to an invalid anchor on the current page (without path)",
 			page: func() page {
 				p := newPage(filepath.Join(contentDir, "en/test.md"))
-				p.addLink("{{< ref \"#invalid\" >}}")
+				p.addLink("#invalid", 1)
 				return p
 			},
 			wantLinks: []link{
 				{
-					rawLink:    "{{< ref \"#invalid\" >}}",
+					rawLink:    "#invalid",
+					lineNumber: 1,
 					URL:        mustParseUrl(filepath.Join(contentDir, "en/test.md#invalid")),
-					fatalError: "#invalid does exists in the target page",
+					fatalError: "#invalid does exists in <site>/content/en/test.md",
 				},
 			},
 		},
@@ -395,14 +412,15 @@ func Test_linkcheckPage(t *testing.T) {
 			name: "page with a valid ref linking to an invalid anchor on the another page",
 			page: func() page {
 				p := newPage(filepath.Join(contentDir, "en/test.md"))
-				p.addLink("{{< ref \"another.md#invalid\" >}}")
+				p.addLink("another#invalid", 1)
 				return p
 			},
 			wantLinks: []link{
 				{
-					rawLink:    "{{< ref \"another.md#invalid\" >}}",
+					rawLink:    "another#invalid",
+					lineNumber: 1,
 					URL:        mustParseUrl(filepath.Join(contentDir, "en/another.md#invalid")),
-					fatalError: "#invalid does exists in the target page",
+					fatalError: "#invalid does exists in <site>/content/en/another.md",
 				},
 			},
 		},
@@ -411,11 +429,9 @@ func Test_linkcheckPage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			pagesLock.Lock()
 			p := tt.page()
-			pages = []*page{&p, &anotherp}
-			pagesByPath = map[string]*page{p.path: &p, anotherp.path: &anotherp}
-			pagesLock.Unlock()
+			pages = []*page{&p, &anotherp, &indexp}
+			pagesByPath = map[string]*page{p.path: &p, anotherp.path: &anotherp, indexp.path: &indexp}
 
 			linkcheckPage(p.path)
 

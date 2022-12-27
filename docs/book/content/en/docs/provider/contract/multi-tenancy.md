@@ -3,6 +3,11 @@ title: "Multi-tenancy"
 weight: 40
 description: |
   Documentation about provider's multy tenancy support.
+migration: |
+  Last import date: 10-30-2022
+aliases:
+- /developer/architecture/controllers/multi-tenancy
+- /developer/architecture/controllers/multi-tenancy.html
 ---
 
 Multi tenancy in Cluster API defines the capability of an infrastructure provider to manage different credentials, each

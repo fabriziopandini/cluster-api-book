@@ -21,14 +21,12 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -51,9 +49,6 @@ var (
 	// pages being processes.
 	pages       []*page
 	pagesByPath map[string]*page
-
-	// protect pages from concurrent access.
-	pagesLock sync.RWMutex
 )
 
 // page define a page validated by linkcheck.
@@ -84,6 +79,9 @@ type page struct {
 type link struct {
 	// rawLink is the link as it is defined in the page.
 	rawLink string
+
+	// lineNumber where the link has been found.
+	lineNumber int
 
 	// fatalError if set, defines an error in reading or processing the link that prevents further processing.
 	fatalError string
@@ -126,8 +124,6 @@ func newPageWithFatalError(path string, error string) page {
 }
 
 func addPage(p page) {
-	pagesLock.Lock()
-	defer pagesLock.Unlock()
 	pages = append(pages, &p)
 	if pagesByPath == nil {
 		pagesByPath = map[string]*page{}
@@ -135,10 +131,10 @@ func addPage(p page) {
 	pagesByPath[p.path] = &p
 }
 
-func (p *page) addLink(l string) {
+func (p *page) addLink(l string, lineNumber int) {
 	u, err := url.Parse(l)
 	if err != nil {
-		p.links = append(p.links, link{rawLink: l, fatalError: fmt.Sprintf("error parsing url: %v", err)})
+		p.links = append(p.links, link{rawLink: l, lineNumber: lineNumber, fatalError: fmt.Sprintf("error parsing url: %v", err)})
 		return
 	}
 
@@ -147,19 +143,21 @@ func (p *page) addLink(l string) {
 		// Error if file url is used in pages outside the hugo website.
 		// TODO: think about pages outside hugo content/language folder, should we support file url? how this behaves in github?
 		if !p.isHugoPage {
-			p.links = append(p.links, link{rawLink: l, fatalError: "scheme is required on links outside the hugo website"})
+			p.links = append(p.links, link{rawLink: l, lineNumber: lineNumber, fatalError: "scheme is required on links outside the hugo website"})
 			return
 		}
 
 		// Parse the link extracting the key parts.
 		path, fragment, language, err := parseLink(l)
 		if err != nil {
-			p.links = append(p.links, link{rawLink: l, fatalError: err.Error()})
+			p.links = append(p.links, link{rawLink: l, lineNumber: lineNumber, fatalError: err.Error()})
 			return
 		}
 		if path == "" {
 			// if path is empty the link is a fragment pointing to an anchor on the current page (e.g. #anchor).
-			path = filepath.Base(p.hugoPath)
+			// NOTE: drop .md from the page name so it aligns to how links behaves in hugo
+			// TODO: think about pages outside hugo content/language folder, should we support file url? how this behaves in github?
+			path = strings.TrimSuffix(filepath.Base(p.hugoPath), ".md")
 		}
 
 		// Compute the path of the target page, transforming relative paths to absolute ones.
@@ -179,21 +177,59 @@ func (p *page) addLink(l string) {
 
 		// Compute the url pointing to the target page.
 		rawURL := filepath.Join(contentDir, language, path)
+
+		// If the target page is a directory, add _index.md
+		isDir, err := isDirectory(rawURL)
+		if err != nil {
+			p.links = append(p.links, link{rawLink: l, lineNumber: lineNumber, fatalError: fmt.Sprintf("error checking if path is a directory: %v", err)})
+			return
+		}
+		if isDir {
+			rawURL = filepath.Join(rawURL, "_index.md")
+		}
+
+		// if it is not a dirctory, then it is an .md file
+		// TODO: what about html files
+		if !isDir {
+			rawURL += ".md"
+		}
+
 		if fragment != "" {
 			rawURL += fragment
 		}
 		URL, err := url.Parse(rawURL)
 		if err != nil {
-			p.links = append(p.links, link{rawLink: l, fatalError: fmt.Sprintf("error parsing ref/refLink path: %v", err)})
+			p.links = append(p.links, link{rawLink: l, lineNumber: lineNumber, fatalError: fmt.Sprintf("error parsing url: %v", err)})
 			return
 		}
-		p.links = append(p.links, link{URL: URL, rawLink: l})
+		p.links = append(p.links, link{URL: URL, rawLink: l, lineNumber: lineNumber})
 		return
 	}
 
 	// otherwise it is an http/https url, use as it is.
 	// TODO: link title, e.g. [Duck Duck Go](https://duckduckgo.com "The best search engine for privacy")
-	p.links = append(p.links, link{rawLink: l, URL: u})
+	p.links = append(p.links, link{rawLink: l, lineNumber: 1, URL: u})
+}
+
+// isDirectory determines if a file represented
+// by `path` is a directory or not
+func isDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return fileInfo.IsDir(), err
+}
+
+func (p *page) logPath() string {
+	if p.isHugoPage {
+		return fmt.Sprintf("<site>/content/%s%s", p.hugoLanguage, p.hugoPath)
+	}
+	return fmt.Sprintf("<root>/%s", strings.TrimPrefix(p.path, *root))
 }
 
 // This pattern applies to the addr part of [text](addr) and searches for {{< tag "value" >}}, captures both tag and value values.
@@ -202,17 +238,25 @@ var refRx = regexp.MustCompile(`^\s*\{\{<\s*([\S\#]+)\s+\"([^\s=]+)\"\s*>\}\}\s*
 
 func parseLink(rawLink string) (path, fragment, language string, err error) {
 	// if the rawLink is a ref/refLink shortcode.
+	// NOTE: this makes .md files easier to write/read; it is also aligned with common practice in use for the K8s website.
 	refs := refRx.FindAllStringSubmatch(rawLink, -1)
-	// TODO: ref/refLink path=
-	// TODO: ref/refLink path= language=
 	if len(refs) == 1 && (refs[0][1] == "ref" || refs[0][1] == "refLink") {
-		// Grab the path and the fragment, if any.
-		path, fragment := splitPathAndFragment(refs[0][2])
-		return path, fragment, "", nil
+		return "", "", "", errors.Errorf("ref/refLink shortcodes must not be used, use %q instead", refs[0][2])
 	}
 
-	// Otherwise it means the link is not a ref/refLink shortcode; we assume it is a plain markdown link.
+	// Otherwise it is a plain markdown link.
 	path, fragment = splitPathAndFragment(rawLink)
+
+	// In hugo the folder name must be used when referring to "_index.md"
+	if filepath.Base(path) == "_index.md" {
+		return "", "", "", errors.Errorf("links must not end with _index.md, use \"%s/\" instead", filepath.Dir(path))
+	}
+
+	// In hugo the file name must not have the .md extension.
+	if filepath.Ext(path) == ".md" {
+		return "", "", "", errors.Errorf("links must not have .md extension, use \"%s%s\" instead", strings.TrimSuffix(path, ".md"), fragment)
+	}
+
 	return path, fragment, "", nil
 }
 
@@ -231,8 +275,6 @@ func splitPathAndFragment(addr string) (string, string) {
 
 // readAll markdown pages from the root folder.
 func readAll() error {
-	// Handle a collection of read tasks working in parallel.
-	var readmdwg sync.WaitGroup
 	if err := filepath.Walk(*root,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -241,20 +283,12 @@ func readAll() error {
 			}
 
 			if filepath.Ext(path) == ".md" {
-				// For each markdown page to read, create a read task.
-				readmdwg.Add(1)
-				go func() {
-					addPage(readMarkdownPage(path))
-					readmdwg.Done()
-				}()
+				addPage(readMarkdownPage(path))
 			}
 			return nil
 		}); err != nil {
 		return errors.Errorf("Error walking path %s: %v", *root, err)
 	}
-
-	// Waits for all the read tasks to complete.
-	readmdwg.Wait()
 	return nil
 }
 
@@ -263,7 +297,7 @@ func readMarkdownPage(path string) page {
 	p := newPage(path)
 
 	// Gets the page content.
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		p.fatalError = fmt.Sprintf("Error reading content: %v", err)
 		return p
@@ -273,9 +307,11 @@ func readMarkdownPage(path string) page {
 	p.anchors = readMarkdownAnchors(string(content))
 
 	// Gets the list of links in the page.
-	links := readMarkdownLinks(string(content))
-	for _, l := range links {
-		p.addLink(l)
+	for i, line := range strings.Split(string(content), "\n") {
+		links := readMarkdownLineLinks(line)
+		for _, l := range links {
+			p.addLink(l, i+1)
+		}
 	}
 	return p
 }
@@ -301,62 +337,37 @@ func readMarkdownAnchors(body string) (anchors []string) {
 var lRx = regexp.MustCompile(`[^\!]\[[^\]]+\]\(([^\)]+)\)`)
 
 // Search for reference links in the format [text]: addr, captures addr value.
-// (?m) is required to force multiline search due to ^ and $ used to exclude other things on the same line.
-var referencelRx = regexp.MustCompile(`(?m)^\[[^\]]+\]\:\s+(.+)$`)
+var referencelRx = regexp.MustCompile(`^\s+\[[^\]]+\]\:\s+(.+)$`)
 
-func readMarkdownLinks(body string) (links []string) {
-	seen := map[string]struct{}{}
-	mv := lRx.FindAllStringSubmatch(body, -1)
+func readMarkdownLineLinks(line string) (links []string) {
+	mv := lRx.FindAllStringSubmatch(line, -1)
 	for _, m := range mv {
-		ref := m[1]
-		if _, ok := seen[ref]; !ok {
-			seen[ref] = struct{}{}
-			links = append(links, ref)
-		}
+		links = append(links, m[1])
 	}
-	mv = referencelRx.FindAllStringSubmatch(body, -1)
+	mv = referencelRx.FindAllStringSubmatch(line, -1)
 	for _, m := range mv {
-		ref := m[1]
-		if _, ok := seen[ref]; !ok {
-			seen[ref] = struct{}{}
-			links = append(links, ref)
-		}
+		links = append(links, m[1])
 	}
 	return
 }
 
 // linkcheckAll all pages.
 func linkcheckAll() error {
-	// Handle a collection of validate tasks working in parallel.
-	var validatewg sync.WaitGroup
+	for i := range pages {
+		p := pages[i]
 
-	pagesLock.RLock()
-	for i, p := range pages {
-		validatewg.Add(1)
-		go func() {
-			// Perform page link check, which can take some time depending by the number of urls.
-			linkcheckPage(p.path)
+		// Perform page link check, which can take some time depending by the number of urls.
+		linkcheckPage(p.path)
 
-			// When page validation is completed, update page.
-			// TODO: check if we need this because linkcheckPage changes the page in place...
-			pagesLock.Lock()
-			defer pagesLock.Unlock()
-			pages[i] = p
-
-			validatewg.Done()
-		}()
+		// When page validation is completed, update page.
+		// TODO: check if we need this because linkcheckPage changes the page in place...
+		pages[i] = p
 	}
-	pagesLock.RUnlock()
-
-	// Waits for all the validate tasks to complete.
-	validatewg.Wait()
 	return nil
 }
 
 func linkcheckPage(path string) {
-	pagesLock.RLock()
 	p, ok := pagesByPath[path]
-	pagesLock.RUnlock()
 	if !ok {
 		panic(fmt.Sprintf("linkcheckPage %s which has not been read before", path))
 	}
@@ -376,17 +387,15 @@ func linkcheckPage(path string) {
 		if l.URL.Scheme == "" {
 			// Check the links targets an existing page.
 			if _, err := os.Stat(l.URL.Path); errors.Is(err, os.ErrNotExist) {
-				l.fatalError = fmt.Sprintf("%s does not exist", l.URL.Path)
+				l.fatalError = fmt.Sprintf("the link resolves to %s which does not exist", strings.TrimPrefix(l.URL.Path, *root))
 				p.links[i] = l
 				continue
 			}
 
-			pagesLock.RLock()
 			targetp, ok := pagesByPath[l.URL.Path]
-			pagesLock.RUnlock()
 			if !ok {
 				// TODO: this should never happen (if we protect from link outside root). Might be we should panic here...
-				l.fatalError = fmt.Sprintf("%s does has not been processed by linkcheck", l.URL.Path)
+				l.fatalError = fmt.Sprintf("the link resolves to %s which has not been processed by linkcheck", l.URL.Path)
 				p.links[i] = l
 				continue
 			}
@@ -401,7 +410,7 @@ func linkcheckPage(path string) {
 					}
 				}
 				if !found {
-					l.fatalError = fmt.Sprintf("%s%s does exists in the target page", anchorSeparator, l.URL.Fragment)
+					l.fatalError = fmt.Sprintf("%s%s does exists in %s", anchorSeparator, l.URL.Fragment, targetp.logPath())
 					p.links[i] = l
 					continue
 				}
@@ -441,15 +450,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	pagesLock.Lock()
-	defer pagesLock.Unlock()
 	sort.SliceStable(pages, func(i, j int) bool { return pages[i].path < pages[j].path })
 
 	fmt.Println()
-	for _, p := range pages {
+
+	a := 0
+	l := 0
+	for i := range pages {
+		p := pages[i]
+		a += len(p.anchors)
+		l += len(p.links)
+
 		s := ""
 		prints := false
-		s += fmt.Sprintf("PAGE: %s\n", p.path)
+		s += fmt.Sprintf("PAGE: %s\n", p.logPath())
 		switch {
 		case p.fatalError != "":
 			prints = true
@@ -464,11 +478,11 @@ func main() {
 				case l.fatalError != "":
 					prints = true
 					errorst++
-					t += fmt.Sprintf(" - ERROR: %s: %s\n", l.rawLink, l.fatalError)
+					t += fmt.Sprintf(" - ERROR: line %d, %s: %s\n", l.lineNumber, l.rawLink, l.fatalError)
 					break
 				default:
 					if *verbose {
-						t += fmt.Sprintf(" - OK: %s\n", l.rawLink)
+						t += fmt.Sprintf(" - OK: line %d, %s\n", l.lineNumber, l.rawLink)
 					}
 				}
 			}
@@ -488,6 +502,6 @@ func main() {
 			fmt.Print(s)
 		}
 	}
-	fmt.Printf("Total page processed: %d\n", len(pages))
+	fmt.Printf("Total page processed: %d links: %d anchors: %d \n", len(pages), l, a)
 
 }
