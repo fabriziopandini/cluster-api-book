@@ -59,7 +59,7 @@ id = "UA-00000000-0"
 # Language configuration
 
 [languages]
-[languages.en]
+[languages.en.params]
 title = "The Cluster API Book"
 description = "The book for Kubernetes Cluster API"
 languageName ="English"
@@ -203,7 +203,7 @@ enable = false
   # replacements = "github.com/google/docsy -> ../../docsy"
   [module.hugoVersion]
     extended = true
-    min = "0.75.0"
+    min = "0.120.3"
   [[module.imports]]
     path = "github.com/google/docsy"
     disable = false
